@@ -1,5 +1,5 @@
 import express from "express";
-import fetch from "node-fetch";
+
 import cors from "cors";
 
 const app = express();
@@ -13,7 +13,6 @@ const {
   FACEBOOK_APP_SECRET,
 } = process.env;
 
-const PORT = process.env.PORT || 8080;
 
 /**
  * GOOGLE
@@ -108,6 +107,8 @@ app.post("/api/auth/facebook", async (req, res) => {
     res.status(500).json({ error: "Facebook auth failed" });
   }
 });
+
+const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
   console.log(`Backend running on port ${PORT}`);
