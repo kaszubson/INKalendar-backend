@@ -17,11 +17,11 @@ const {
 
 const PORT = process.env.PORT || 8080;
 
-app.post("/api/auth/google", async (req, res) => {
-  const { code } = req.body;
+app.get("/auth/google/callback", async (req, res) => {
+  const code = req.query.code;
 
   if (!code) {
-    return res.status(400).json({ error: "Missing code" });
+    return res.status(400).send("Missing code");
   }
 
   // 1️⃣ code → access_token
@@ -29,17 +29,21 @@ app.post("/api/auth/google", async (req, res) => {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: process.env.GOOGLE_REDIRECT_URI,
+      client_id: GOOGLE_CLIENT_ID,
+      client_secret: GOOGLE_CLIENT_SECRET,
+      redirect_uri: GOOGLE_REDIRECT_URI,
       grant_type: "authorization_code",
-      code
+      code: String(code)
     })
   });
 
   const tokenData = await tokenRes.json();
 
-  // 2️⃣ user profile
+  if (!tokenData.access_token) {
+    return res.status(400).json(tokenData);
+  }
+
+  // 2️⃣ profile
   const profileRes = await fetch(
     "https://www.googleapis.com/oauth2/v3/userinfo",
     {
@@ -51,63 +55,47 @@ app.post("/api/auth/google", async (req, res) => {
 
   const profile = await profileRes.json();
 
-  return res.json({
-    id: profile.sub,
-    email: profile.email,
-    username: profile.name,
-    avatar: profile.picture
-  });
+  // 3️⃣ redirect do frontendu (z danymi lub tokenem)
+  res.redirect(
+    `https://inkalendar-906895254064.us-west1.run.app/#/oauth-success?name=${encodeURIComponent(
+      profile.name
+    )}`
+  );
 });
 
-app.post("/api/auth/facebook", async (req, res) => {
-  try {
-    const { code } = req.body;
-    if (!code) {
-      return res.status(400).json({ error: "Missing OAuth code" });
-    }
+app.get("/auth/facebook/callback", async (req, res) => {
+  const code = req.query.code;
 
-    const tokenRes = await fetch(
-      "https://graph.facebook.com/v19.0/oauth/access_token" +
-        `?client_id=${FACEBOOK_APP_ID}` +
-        `&client_secret=${FACEBOOK_APP_SECRET}` +
-        `&redirect_uri=${encodeURIComponent(FACEBOOK_REDIRECT_URI)}` +
-        `&code=${code}`
-    );
-
-    const tokenData = await tokenRes.json();
-
-    if (!tokenData.access_token) {
-      return res.status(400).json({
-        error: "Token exchange failed",
-        details: tokenData
-      });
-    }
-
-    const profileRes = await fetch(
-      "https://graph.facebook.com/me" +
-        "?fields=id,name,picture" +
-        `&access_token=${tokenData.access_token}`
-    );
-
-    const profile = await profileRes.json();
-
-    if (!profile.id) {
-      return res.status(400).json({
-        error: "Failed to fetch user profile",
-        details: profile
-      });
-    }
-
-    return res.json({
-      id: profile.id,
-      username: profile.name,
-      avatar: profile.picture?.data?.url
-    });
-
-  } catch (err) {
-    console.error("Facebook auth error:", err);
-    res.status(500).json({ error: "Internal server error" });
+  if (!code) {
+    return res.status(400).send("Missing code");
   }
+
+  const tokenRes = await fetch(
+    "https://graph.facebook.com/v19.0/oauth/access_token" +
+      `?client_id=${FACEBOOK_APP_ID}` +
+      `&client_secret=${FACEBOOK_APP_SECRET}` +
+      `&redirect_uri=${encodeURIComponent(FACEBOOK_REDIRECT_URI)}` +
+      `&code=${code}`
+  );
+
+  const tokenData = await tokenRes.json();
+
+  if (!tokenData.access_token) {
+    return res.status(400).json(tokenData);
+  }
+
+  const profileRes = await fetch(
+    "https://graph.facebook.com/me?fields=id,name,picture" +
+      `&access_token=${tokenData.access_token}`
+  );
+
+  const profile = await profileRes.json();
+
+  res.redirect(
+    `https://inkalendar-906895254064.us-west1.run.app/#/oauth-success?name=${encodeURIComponent(
+      profile.name
+    )}`
+  );
 });
 
 app.listen(PORT, () => {
