@@ -55,12 +55,19 @@ app.get("/auth/google/callback", async (req, res) => {
 
   const profile = await profileRes.json();
 
-  // 3️⃣ redirect do frontendu (z danymi lub tokenem)
-  res.redirect(
-    `https://inkalendar-906895254064.us-west1.run.app/#/oauth-success?name=${encodeURIComponent(
-      profile.name
-    )}`
-  );
+//  // 3️⃣ redirect do frontendu (z danymi lub tokenem)
+//  res.redirect(
+//    `https://inkalendar-906895254064.us-west1.run.app/#/oauth-success?name=${encodeURIComponent(
+//      profile.name
+//    )}`
+//  );
+//});
+
+res.json({
+  profile.id,
+  profile.name,
+  profile.email,
+  profile.avatar
 });
 
 app.get("/auth/facebook/callback", async (req, res) => {
