@@ -13,8 +13,9 @@ const {
   GOOGLE_CLIENT_ID,
   GOOGLE_CLIENT_SECRET,
   GOOGLE_REDIRECT_URI
-  PORT = 8080
 } = process.env;
+
+const PORT = process.env.PORT || 8080;
 
 app.post("/api/auth/google", async (req, res) => {
   const { code } = req.body;
@@ -110,5 +111,5 @@ app.post("/api/auth/facebook", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`Auth server running on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
